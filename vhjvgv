@@ -1,0 +1,51 @@
+# namitha
+from flask import Flask, render_template, request, jsonify
+import json
+
+app = Flask(__name__)
+
+# Load disease data
+with open("diseases.json") as f:
+    disease_data = json.load(f)
+
+@app.route("/")
+def home():
+    return render_template("index.html")
+
+@app.route("/get", methods=["POST"])
+def chatbot_response():
+    user_msg = request.json.get("message", "").lower()
+    days = int(request.json.get("days", 0))
+    response = "❌ Sorry, I couldn't understand. Please try another symptom or disease."
+
+    for disease, info in disease_data.items():
+        # Match either disease name or any symptom
+        
+        symptoms = [sym.lower() for sym in info.get("symptoms", [])]
+        if disease.lower() in user_msg or any(symptom in user_msg for symptom in symptoms):
+            duration_advice = ""
+            if days > 0:
+                if days <= 3:
+                    duration_advice = f"\n⏰ Since you've had symptoms for {days} day(s), this might be in early stages."
+                elif days <= 7:
+                    duration_advice = f"\n⏰ With {days} days of symptoms, consider monitoring closely."
+                elif days <= 14:
+                    duration_advice = f"\n⚠️ {days} days is concerning. Please consult a healthcare professional."
+                else:
+                    duration_advice = f"\n🚨 {days} days of symptoms requires immediate medical attention!"
+
+            precautions = info.get("precautions", [])
+            response = f"🦠 Disease: {disease}\n💡 Precautions: {', '.join(precautions)}{duration_advice}"
+            break
+
+    return jsonify({"response": response})
+
+if __name__ == "__main__":
+    app.run(debug=True)
+
+
+
+                                      
+
+
+                                       
